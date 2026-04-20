@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Demanda — Karitel / RDM</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#185FA5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Demanda kW">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f4f4;color:#222;padding:16px}
+h1{font-size:16px;font-weight:600;margin-bottom:4px;color:#111}
+.sub{font-size:12px;color:#888;margin-bottom:12px}
+.tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid #ddd}
+.tab{padding:7px 18px;font-size:13px;cursor:pointer;border:none;background:none;color:#666;border-bottom:3px solid transparent}
+.tab.active{color:#185FA5;font-weight:600;border-bottom:3px solid #185FA5}
+.stitle{font-size:11px;font-weight:700;color:#666;margin:14px 0 5px;text-transform:uppercase;letter-spacing:.05em}
+.sc{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:6px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.sn{font-size:13px;font-weight:600;color:#111}
+.si{font-size:11px;color:#888}
+.bc{display:flex;align-items:center;gap:10px}
+.bc label{font-size:12px;color:#666;min-width:100px}
+.bc input[type=range]{flex:1;accent-color:#185FA5}
+.bc span{font-size:12px;font-weight:600;min-width:110px;color:#111}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px;margin-bottom:10px}
+.pv{font-size:12px;padding:5px 4px;border:1px solid #ccc;border-radius:6px;cursor:pointer;text-align:center;background:#f0f0f0;color:#555;user-select:none;line-height:1.4}
+.pv:hover{background:#dce8f8}
+.pv.on{background:#185FA5;color:#fff;border-color:#185FA5}
+.pv.on .ps{color:#B5D4F4}
+.ps{font-size:10px;display:block}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.mc{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px 14px}
+.mc .ml{font-size:11px;color:#888;margin-bottom:4px}
+.mc .mv{font-size:22px;font-weight:700;color:#111}
+.mc .mu{font-size:10px;color:#888}
+.mc.warn .mv{color:#BA7517}
+.mc.danger .mv{color:#c0392b}
+.mc.ok .mv{color:#27ae60}
+.cw{position:relative;width:100%;height:340px;margin:8px 0 14px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#666;margin-bottom:6px}
+.ld{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:middle}
+.pw{margin-bottom:10px}
+.pl{display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:3px}
+.pb{height:10px;border-radius:5px;background:#eee;overflow:hidden}
+.pf{height:100%;border-radius:5px;transition:width .15s}
+.al{font-size:12px;color:#666;line-height:2;margin-bottom:5px}
+.al span{background:#dce8f8;color:#185FA5;border-radius:4px;padding:2px 6px;margin-right:3px;display:inline-block;margin-bottom:3px;font-size:11px}
+.br{display:flex;gap:12px;align-items:center;font-size:12px;margin-bottom:4px}
+.bv{background:#eee;border-radius:4px;padding:2px 8px;font-weight:700;color:#111;min-width:35px;text-align:center}
+.alert{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;font-size:12px;color:#856404;margin-bottom:10px}
+</style>
+</head>
+<body>
+<h1>⚡ Simulador de Demanda Instantânea — Karitel / RDM</h1>
+<p class="sub">Potência real por pivô (CV × 0,7355). Demanda instantânea em kW. Linha vermelha = limite contratado.</p>
+<div class="alert">⚠ Se a barra superar a linha vermelha → <b>multa de ultrapassagem de demanda</b>.</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('km1')">KM1 (9.500 kW)</button>
+  <button class="tab" onclick="switchTab('km2')">KM2 (8.800 kW)</button>
+  <button class="tab" onclick="switchTab('rdm')">RDM (3.800 kW)</button>
+  <button class="tab" onclick="switchTab('resumo')">Resumo</button>
+</div>
+
+<div id="tab-km1">
+  <div class="stitle">Pivôs KM1 — Módulo 01 (P1 a P34)</div>
+  <div id="pg-km1m1" class="pg"></div>
+  <div class="stitle">Pivôs KM1 — Módulo 02 (P35–P40, P45–P49)</div>
+  <div id="pg-km1m2" class="pg"></div>
+  <div class="stitle">Bombeamento KM1 — Módulo 01</div>
+  <div id="st-km1m1"></div>
+</div>
+
+<div id="tab-km2" style="display:none">
+  <div class="stitle">Pivôs KM2 — Módulo 02 (P41–43, P52, P73–74)</div>
+  <div id="pg-km2m2" class="pg"></div>
+  <div class="stitle">Pivôs KM2 — Módulo 03 (P44 a P72)</div>
+  <div id="pg-km2m3" class="pg"></div>
+  <div class="stitle">Bombeamento KM2 — Módulo 02 (Garfo, Karitel, Elevatória G e K)</div>
+  <div id="st-km2m2"></div>
+</div>
+
+<div id="tab-rdm" style="display:none">
+  <div class="stitle">Pivôs RDM — Módulo 01 (P101 a P110)</div>
+  <div id="pg-rdm1" class="pg"></div>
+  <div class="stitle">Pivôs RDM — Módulo 02 (P112 a P133)</div>
+  <div id="pg-rdm2" class="pg"></div>
+  <div class="stitle">Bombeamento RDM — Módulo 01</div>
+  <div id="st-rdm1"></div>
+  <div class="stitle">Bombeamento RDM — Módulo 02</div>
+  <div id="st-rdm2"></div>
+</div>
+
+<div id="tab-resumo" style="display:none">
+  <div class="stitle">Demanda instantânea vs contrato</div>
+  <div id="res-prog"></div>
+  <div class="stitle" style="margin-top:12px">Pivôs ligados</div>
+  <div id="res-pv"></div>
+  <div class="stitle" style="margin-top:12px">Bombas ativas por estação</div>
+  <div id="res-bm"></div>
+</div>
+
+<div class="stitle" style="margin-top:8px">Demanda instantânea por contrato</div>
+<div class="metrics" id="mbar"></div>
+<div class="leg">
+  <span><span class="ld" style="background:#185FA5"></span>Pivôs (kW)</span>
+  <span><span class="ld" style="background:#27ae60"></span>Bombeamento (kW)</span>
+  <span><span class="ld" style="background:#c0392b;opacity:.6"></span>Limite contratado (kW)</span>
+</div>
+<div class="cw"><canvas id="chart"></canvas></div>
+
+<script>
+var PIVOTS=[
+  {n:1,setor:'KM1',mod:'M01',kw:147.1},{n:2,setor:'KM1',mod:'M01',kw:147.1},{n:3,setor:'KM1',mod:'M01',kw:147.1},
+  {n:4,setor:'KM1',mod:'M01',kw:91.94},{n:5,setor:'KM1',mod:'M01',kw:183.88},{n:6,setor:'KM1',mod:'M01',kw:183.88},
+  {n:7,setor:'KM1',mod:'M01',kw:183.88},{n:8,setor:'KM1',mod:'M01',kw:183.88},{n:9,setor:'KM1',mod:'M01',kw:147.1},
+  {n:10,setor:'KM1',mod:'M01',kw:183.88},{n:11,setor:'KM1',mod:'M01',kw:147.1},{n:12,setor:'KM1',mod:'M01',kw:183.88},
+  {n:13,setor:'KM1',mod:'M01',kw:91.94},{n:14,setor:'KM1',mod:'M01',kw:183.88},{n:15,setor:'KM1',mod:'M01',kw:147.1},
+  {n:16,setor:'KM1',mod:'M01',kw:128.71},{n:17,setor:'KM1',mod:'M01',kw:147.1},{n:18,setor:'KM1',mod:'M01',kw:128.71},
+  {n:19,setor:'KM1',mod:'M01',kw:147.1},{n:20,setor:'KM1',mod:'M01',kw:183.88},{n:21,setor:'KM1',mod:'M01',kw:147.1},
+  {n:22,setor:'KM1',mod:'M01',kw:147.1},{n:23,setor:'KM1',mod:'M01',kw:147.1},{n:24,setor:'KM1',mod:'M01',kw:183.88},
+  {n:25,setor:'KM1',mod:'M01',kw:110.32},{n:26,setor:'KM1',mod:'M01',kw:183.88},{n:27,setor:'KM1',mod:'M01',kw:128.71},
+  {n:28,setor:'KM1',mod:'M01',kw:147.1},{n:29,setor:'KM1',mod:'M01',kw:128.71},{n:30,setor:'KM1',mod:'M01',kw:128.71},
+  {n:31,setor:'KM1',mod:'M01',kw:73.55},{n:32,setor:'KM1',mod:'M01',kw:110.32},{n:33,setor:'KM1',mod:'M01',kw:110.32},
+  {n:34,setor:'KM1',mod:'M01',kw:91.94},
+  {n:35,setor:'KM1',mod:'M02',kw:183.88},{n:36,setor:'KM1',mod:'M02',kw:183.88},{n:37,setor:'KM1',mod:'M02',kw:183.88},
+  {n:38,setor:'KM1',mod:'M02',kw:183.88},{n:39,setor:'KM1',mod:'M02',kw:110.32},{n:40,setor:'KM1',mod:'M02',kw:183.88},
+  {n:45,setor:'KM1',mod:'M02',kw:110.32},{n:46,setor:'KM1',mod:'M02',kw:183.88},{n:47,setor:'KM1',mod:'M02',kw:220.65},
+  {n:48,setor:'KM1',mod:'M02',kw:183.88},{n:49,setor:'KM1',mod:'M02',kw:147.1},
+  {n:41,setor:'KM2',mod:'M02',kw:147.1},{n:42,setor:'KM2',mod:'M02',kw:110.32},{n:43,setor:'KM2',mod:'M02',kw:147.1},
+  {n:52,setor:'KM2',mod:'M02',kw:185.35},{n:73,setor:'KM2',mod:'M02',kw:220.65},{n:74,setor:'KM2',mod:'M02',kw:220.65},
+  {n:44,setor:'KM2',mod:'M03',kw:55.16},{n:50,setor:'KM2',mod:'M03',kw:110.32},{n:51,setor:'KM2',mod:'M03',kw:110.32},
+  {n:53,setor:'KM2',mod:'M03',kw:110.32},{n:54,setor:'KM2',mod:'M03',kw:110.32},{n:55,setor:'KM2',mod:'M03',kw:183.88},
+  {n:56,setor:'KM2',mod:'M03',kw:128.71},{n:57,setor:'KM2',mod:'M03',kw:147.1},{n:58,setor:'KM2',mod:'M03',kw:128.71},
+  {n:59,setor:'KM2',mod:'M03',kw:128.71},{n:60,setor:'KM2',mod:'M03',kw:128.71},{n:61,setor:'KM2',mod:'M03',kw:128.71},
+  {n:62,setor:'KM2',mod:'M03',kw:128.71},{n:63,setor:'KM2',mod:'M03',kw:4.51},{n:64,setor:'KM2',mod:'M03',kw:3.46},
+  {n:65,setor:'KM2',mod:'M03',kw:8.48},{n:66,setor:'KM2',mod:'M03',kw:91.94},{n:67,setor:'KM2',mod:'M03',kw:73.55},
+  {n:68,setor:'KM2',mod:'M03',kw:73.55},{n:69,setor:'KM2',mod:'M03',kw:55.16},{n:70,setor:'KM2',mod:'M03',kw:128.71},
+  {n:71,setor:'KM2',mod:'M03',kw:29.42},{n:72,setor:'KM2',mod:'M03',kw:110.32},
+  {n:101,setor:'RDM1',mod:'RDM1',kw:110.32},{n:102,setor:'RDM1',mod:'RDM1',kw:91.94},{n:103,setor:'RDM1',mod:'RDM1',kw:73.55},
+  {n:104,setor:'RDM1',mod:'RDM1',kw:73.55},{n:110,setor:'RDM1',mod:'RDM1',kw:91.94},
+  {n:105,setor:'RDM2',mod:'RDM1',kw:73.55},{n:106,setor:'RDM2',mod:'RDM1',kw:73.55},{n:107,setor:'RDM2',mod:'RDM1',kw:91.94},
+  {n:108,setor:'RDM2',mod:'RDM1',kw:73.55},{n:109,setor:'RDM2',mod:'RDM1',kw:91.94},
+  {n:112,setor:'RDM2',mod:'RDM2',kw:128.71},{n:113,setor:'RDM2',mod:'RDM2',kw:128.71},{n:114,setor:'RDM2',mod:'RDM2',kw:110.32},
+  {n:115,setor:'RDM2',mod:'RDM2',kw:128.71},{n:116,setor:'RDM2',mod:'RDM2',kw:128.71},{n:117,setor:'RDM2',mod:'RDM2',kw:128.71},
+  {n:118,setor:'RDM2',mod:'RDM2',kw:128.71},{n:119,setor:'RDM2',mod:'RDM2',kw:128.71},{n:120,setor:'RDM2',mod:'RDM2',kw:147.1},
+  {n:121,setor:'RDM2',mod:'RDM2',kw:128.71},{n:122,setor:'RDM2',mod:'RDM2',kw:147.1},{n:123,setor:'RDM2',mod:'RDM2',kw:128.71},
+  {n:124,setor:'RDM2',mod:'RDM2',kw:128.71},{n:125,setor:'RDM2',mod:'RDM2',kw:128.71},{n:126,setor:'RDM2',mod:'RDM2',kw:128.71},
+  {n:127,setor:'RDM2',mod:'RDM2',kw:147.1},{n:128,setor:'RDM2',mod:'RDM2',kw:128.71},{n:129,setor:'RDM2',mod:'RDM2',kw:147.1},
+  {n:130,setor:'RDM2',mod:'RDM2',kw:147.1},{n:131,setor:'RDM2',mod:'RDM2',kw:147.1},{n:132,setor:'RDM2',mod:'RDM2',kw:147.1},
+  {n:133,setor:'RDM2',mod:'RDM2',kw:147.1}
+];
+
+var STATIONS={
+  km1m1:[
+    {id:'prim01',name:'Primavera 01',total:3,kw_b:184},
+    {id:'prim02',name:'Primavera 02',total:5,kw_b:184},
+    {id:'bomnome',name:'Bom Nome',total:12,kw_b:184},
+    {id:'prim03',name:'Primavera 03',total:7,kw_b:147},
+    {id:'unif45',name:'Unificada 4/5',total:14,kw_b:368},
+  ],
+  km2m2:[
+    {id:'garfo',name:'Garfo',total:10,kw_b:184},
+    {id:'karitel',name:'Karitel',total:10,kw_b:184},
+    {id:'elevgk',name:'Elevatória G e K',total:24,kw_b:184},
+  ],
+  rdm1:[
+    {id:'prm01',name:'PRM 01',total:1,kw_b:205.9},
+    {id:'prm02',name:'PRM 02',total:1,kw_b:205.9},
+    {id:'prm03',name:'PRM 03',total:1,kw_b:205.9},
+    {id:'prm04',name:'PRM 04',total:1,kw_b:205.9},
+    {id:'prm05',name:'PRM 05',total:1,kw_b:205.9},
+    {id:'prm06',name:'PRM 06',total:1,kw_b:205.9},
+  ],
+  rdm2:[
+    {id:'prm07',name:'PRM 07',total:1,kw_b:132.4},
+    {id:'prm08',name:'PRM 08',total:1,kw_b:205.9},
+    {id:'prm09',name:'PRM 09',total:1,kw_b:205.9},
+    {id:'prm10',name:'PRM 10',total:1,kw_b:205.9},
+    {id:'prm11',name:'PRM 11',total:1,kw_b:205.9},
+    {id:'prm12',name:'PRM 12',total:1,kw_b:205.9},
+    {id:'prm13',name:'PRM 13',total:1,kw_b:205.9},
+  ]
+};
+
+var CONTRACTS={KM1:9500,KM2:8800,RDM:3800};
+var pvOn={};var bmOn={};
+PIVOTS.forEach(function(p){pvOn[p.n]=false;});
+Object.values(STATIONS).flat().forEach(function(s){bmOn[s.id]=0;});
+
+function allSt(){return Object.values(STATIONS).flat();}
+
+function initGrid(cid,pivots){
+  var el=document.getElementById(cid);
+  pivots.forEach(function(p){
+    var d=document.createElement('div');
+    d.className='pv';d.id='pv'+p.n;
+    d.innerHTML='P'+p.n+'<span class="ps">'+Math.round(p.kw)+' kW</span>';
+    d.onclick=function(){pvOn[p.n]=!pvOn[p.n];d.classList.toggle('on',pvOn[p.n]);update();};
+    el.appendChild(d);
+  });
+}
+
+function initSt(cid,stations){
+  var el=document.getElementById(cid);
+  stations.forEach(function(s){
+    var d=document.createElement('div');d.className='sc';
+    d.innerHTML='<div class="sh"><span class="sn">'+s.name+'</span><span class="si">'+s.total+' bomba'+(s.total>1?'s':'')+' | '+Math.round(s.kw_b)+' kW/bomba</span></div>'+
+      '<div class="bc"><label>Bombas ligadas:</label><input type="range" min="0" max="'+s.total+'" step="1" value="0" oninput="setBm(\''+s.id+'\',this.value)"><span id="bv'+s.id+'">0 / 0 kW</span></div>';
+    el.appendChild(d);
+  });
+}
+
+function setBm(id,v){
+  bmOn[id]=parseInt(v);
+  var st=allSt().find(function(s){return s.id===id;});
+  document.getElementById('bv'+id).textContent=v+' / '+Math.round(parseInt(v)*st.kw_b).toLocaleString('pt-BR')+' kW';
+  update();
+}
+
+function calc(){
+  var pvKW=function(setor){return PIVOTS.filter(function(p){return p.setor===setor&&pvOn[p.n];}).reduce(function(a,p){return a+p.kw;},0);};
+  var bmKW=function(ids){return ids.reduce(function(a,id){var s=allSt().find(function(x){return x.id===id;});return a+(s?bmOn[id]*s.kw_b:0);},0);};
+
+  var km1_pv=pvKW('KM1');
+  var km1_bm=bmKW(STATIONS.km1m1.map(function(s){return s.id;}));
+  var km2_pv=pvKW('KM2');
+  var km2_bm=bmKW(STATIONS.km2m2.map(function(s){return s.id;}));
+  var rdm_pv=pvKW('RDM1')+pvKW('RDM2');
+  var rdm_bm=bmKW(STATIONS.rdm1.map(function(s){return s.id;}).concat(STATIONS.rdm2.map(function(s){return s.id;})));
+
+  return{
+    km1:{pv:km1_pv,bm:km1_bm,total:km1_pv+km1_bm,lim:CONTRACTS.KM1,
+      pvCount:PIVOTS.filter(function(p){return p.setor==='KM1'&&pvOn[p.n];}).length},
+    km2:{pv:km2_pv,bm:km2_bm,total:km2_pv+km2_bm,lim:CONTRACTS.KM2,
+      pvCount:PIVOTS.filter(function(p){return p.setor==='KM2'&&pvOn[p.n];}).length},
+    rdm:{pv:rdm_pv,bm:rdm_bm,total:rdm_pv+rdm_bm,lim:CONTRACTS.RDM,
+      pvCount:PIVOTS.filter(function(p){return(p.setor==='RDM1'||p.setor==='RDM2')&&pvOn[p.n];}).length},
+  };
+}
+
+var chart;
+function initChart(){
+  var ctx=document.getElementById('chart').getContext('2d');
+  chart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['KM1 — 9.500 kW','KM2 — 8.800 kW','RDM — 3.800 kW'],
+      datasets:[
+        {label:'Pivôs (kW)',data:[0,0,0],backgroundColor:'#185FA5',stack:'a'},
+        {label:'Bombeamento (kW)',data:[0,0,0],backgroundColor:'#27ae60',stack:'a'},
+        {label:'Limite contratado (kW)',data:[9500,8800,3800],type:'line',borderColor:'#c0392b',
+          backgroundColor:'rgba(192,57,43,0.07)',borderDash:[6,4],borderWidth:2.5,
+          pointRadius:7,pointBackgroundColor:'#c0392b',fill:false,stack:undefined,order:-1},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
+        return c.dataset.label+': '+Math.round(c.raw).toLocaleString('pt-BR')+' kW';
+      }}}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:13,weight:'bold'}}},
+        y:{stacked:true,beginAtZero:true,suggestedMax:10500,
+          ticks:{callback:function(v){return v.toLocaleString('pt-BR');},font:{size:12}},
+          title:{display:true,text:'kW (demanda instantânea)',font:{size:12}}}
+      }
+    }
+  });
+}
+
+function update(){
+  var e=calc();
+  chart.data.datasets[0].data=[Math.round(e.km1.pv),Math.round(e.km2.pv),Math.round(e.rdm.pv)];
+  chart.data.datasets[1].data=[Math.round(e.km1.bm),Math.round(e.km2.bm),Math.round(e.rdm.bm)];
+  chart.update('none');
+
+  var pvTotal=Object.keys(pvOn).filter(function(k){return pvOn[k];}).length;
+  var bmTotal=Object.values(bmOn).reduce(function(a,v){return a+v;},0);
+  var totalKw=e.km1.total+e.km2.total+e.rdm.total;
+  var totalLim=CONTRACTS.KM1+CONTRACTS.KM2+CONTRACTS.RDM;
+  var pct=Math.round(totalKw/totalLim*100);
+  var sc=pct>100?'danger':pct>90?'warn':'ok';
+
+  document.getElementById('mbar').innerHTML=
+    '<div class="mc"><div class="ml">Pivôs ligados</div><div class="mv">'+pvTotal+'</div><div class="mu">unidades</div></div>'+
+    '<div class="mc"><div class="ml">Bombas ligadas</div><div class="mv">'+bmTotal+'</div><div class="mu">total</div></div>'+
+    '<div class="mc '+sc+'"><div class="ml">Demanda total</div><div class="mv">'+Math.round(totalKw).toLocaleString('pt-BR')+'</div><div class="mu">kW instantâneo</div></div>'+
+    '<div class="mc '+sc+'"><div class="ml">% do contrato</div><div class="mv">'+pct+'%</div><div class="mu">de '+totalLim.toLocaleString('pt-BR')+' kW</div></div>';
+
+  if(document.getElementById('tab-resumo').style.display!=='none') renderResumo(e);
+}
+
+function renderResumo(e){
+  var mods=[{label:'KM1',d:e.km1},{label:'KM2',d:e.km2},{label:'RDM',d:e.rdm}];
+  var h='';
+  mods.forEach(function(m){
+    var pct=m.d.lim>0?Math.round(m.d.total/m.d.lim*100):0;
+    var col=pct>100?'#c0392b':pct>90?'#BA7517':'#27ae60';
+    var bw=Math.min(pct,100);
+    h+='<div class="pw"><div class="pl">'+
+      '<span style="font-weight:700;font-size:13px">'+m.label+' — '+m.d.pvCount+' pivô'+(m.d.pvCount!==1?'s':'')+'</span>'+
+      '<span style="color:'+col+';font-weight:600">'+Math.round(m.d.total).toLocaleString('pt-BR')+' / '+m.d.lim.toLocaleString('pt-BR')+' kW ('+pct+'%)</span></div>'+
+      '<div class="pb"><div class="pf" style="width:'+bw+'%;background:'+col+'"></div></div>'+
+      '<div style="font-size:11px;color:#888;margin-top:3px">Pivôs: '+Math.round(m.d.pv).toLocaleString('pt-BR')+' kW | Bombeamento: '+Math.round(m.d.bm).toLocaleString('pt-BR')+' kW</div></div>';
+  });
+  document.getElementById('res-prog').innerHTML=h;
+
+  var km1on=PIVOTS.filter(function(p){return p.setor==='KM1'&&pvOn[p.n];}).map(function(p){return '<span>P'+p.n+'</span>';}).join('');
+  var km2on=PIVOTS.filter(function(p){return p.setor==='KM2'&&pvOn[p.n];}).map(function(p){return '<span>P'+p.n+'</span>';}).join('');
+  var rdmon=PIVOTS.filter(function(p){return(p.setor==='RDM1'||p.setor==='RDM2')&&pvOn[p.n];}).map(function(p){return '<span>P'+p.n+'</span>';}).join('');
+  document.getElementById('res-pv').innerHTML=
+    '<div class="al"><b>KM1:</b> '+(km1on||'<i>nenhum</i>')+'</div>'+
+    '<div class="al"><b>KM2:</b> '+(km2on||'<i>nenhum</i>')+'</div>'+
+    '<div class="al"><b>RDM:</b> '+(rdmon||'<i>nenhum</i>')+'</div>';
+
+  var bh='';
+  allSt().forEach(function(s){
+    if(bmOn[s.id]>0){
+      bh+='<div class="br"><span style="min-width:150px;color:#666">'+s.name+'</span>'+
+        '<span class="bv">'+bmOn[s.id]+'/'+s.total+'</span>'+
+        '<span style="color:#444">'+Math.round(bmOn[s.id]*s.kw_b).toLocaleString('pt-BR')+' kW</span></div>';
+    }
+  });
+  document.getElementById('res-bm').innerHTML=bh||'<span style="font-size:12px;color:#888">Nenhuma bomba ligada</span>';
+}
+
+function switchTab(t){
+  ['km1','km2','rdm','resumo'].forEach(function(x){
+    document.getElementById('tab-'+x).style.display=x===t?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(el,i){
+    el.classList.toggle('active',['km1','km2','rdm','resumo'][i]===t);
+  });
+  if(t==='resumo') renderResumo(calc());
+}
+
+initGrid('pg-km1m1',PIVOTS.filter(function(p){return p.setor==='KM1'&&p.mod==='M01';}));
+initGrid('pg-km1m2',PIVOTS.filter(function(p){return p.setor==='KM1'&&p.mod==='M02';}));
+initGrid('pg-km2m2',PIVOTS.filter(function(p){return p.setor==='KM2'&&p.mod==='M02';}));
+initGrid('pg-km2m3',PIVOTS.filter(function(p){return p.setor==='KM2'&&p.mod==='M03';}));
+initGrid('pg-rdm1',PIVOTS.filter(function(p){return p.mod==='RDM1';}));
+initGrid('pg-rdm2',PIVOTS.filter(function(p){return p.mod==='RDM2';}));
+initSt('st-km1m1',STATIONS.km1m1);
+initSt('st-km2m2',STATIONS.km2m2);
+initSt('st-rdm1',STATIONS.rdm1);
+initSt('st-rdm2',STATIONS.rdm2);
+initChart();
+update();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('SW registrado:', r.scope))
+      .catch(e => console.log('SW falhou:', e));
+  });
+}
+</script>
+</body>
+</html>
