@@ -28,9 +28,11 @@ h1{font-size:18px;font-weight:700;color:#111}
 .q{padding:10px 0;border-top:1px solid #eee}
 .card>.q:first-child,.gtitle+.q{border-top:none}
 .ql{font-size:14px;font-weight:600;color:#111;margin-bottom:7px;line-height:1.35}
+.qh{font-size:12px;font-weight:400;color:#777;margin-top:2px}
 .q.missing .ql{color:#b02a2a}
 .q.missing .ql::after{content:" — obrigatório";font-weight:400;font-size:12px}
 .opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts[data-q^="limp_"] .opt{min-width:44px;padding:10px 0;flex:1;max-width:56px}
 .opt{border:1px solid #bbb;background:#f5f5f5;color:#333;font-size:14px;font-weight:600;padding:10px 14px;border-radius:6px;cursor:pointer;min-width:64px}
 .opt.sel{background:#185FA5;border-color:#185FA5;color:#fff}
 .opt.sel.bad{background:#c0392b;border-color:#c0392b}
@@ -155,6 +157,8 @@ var SHEETS_URL = '';
 var AVAL3 = ['Apto','Não apto','Corrigível'];
 var CLIMA = ['Apto','Não apto','Adaptável'];
 var SN = ['Sim','Não'];
+var NIVEL = ['0','1','2','3','4','5'];
+var NIVEL_H = '0 = muito sujo · 5 = totalmente limpo';
 var FORM = [
   {part:'Parte 1 — Dados do responsável', groups:[{items:[
     {t:'choice', id:'piloto', l:'Piloto', o:['Aloísio','Marco','Outro'], follow:{when:'Outro', id:'piloto_outro', l:'Nome do piloto'}},
@@ -180,6 +184,8 @@ var FORM = [
       {t:'choice', id:'helices', l:'Avaliação das hélices e motores', o:AVAL3, bad:['Não apto'], mid:['Corrigível']},
       {t:'choice', id:'pulv', l:'Avaliação do sistema de pulverização', o:AVAL3, bad:['Não apto'], mid:['Corrigível']},
       {t:'choice', id:'seguranca', l:'Avaliação do sistema de segurança: câmeras e sensores', o:AVAL3, bad:['Não apto'], mid:['Corrigível']},
+      {t:'choice', id:'limp_drone', l:'Limpeza do drone', h:NIVEL_H, o:NIVEL, bad:['0','1'], mid:['2','3'], good:['4','5']},
+      {t:'choice', id:'limp_tanque', l:'Limpeza do tanque', h:NIVEL_H, o:NIVEL, bad:['0','1'], mid:['2','3'], good:['4','5']},
       {t:'choice', id:'atualizada', l:'A aeronave está atualizada?', o:SN, mid:['Não'], follow:{when:'Não', id:'atualizada_pq', l:'Por quê?'}},
       {t:'choice', id:'erro_controle', l:'Aparece algum erro no controle?', o:SN, bad:['Sim'], follow:{when:'Sim', id:'erro_qual', l:'Qual?', photos:true}},
       {t:'choice', id:'misturador', l:'O misturador está em bom funcionamento?', o:SN, bad:['Não'], follow:{when:'Não', id:'misturador_pq', l:'Por quê?'}},
@@ -224,7 +230,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},2800);}
 function fmtDT(iso){if(!iso)return '';var d=new Date(iso),p=function(n){return(n<10?'0':'')+n;};return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());}
 function items(){var a=[];FORM.forEach(function(P){P.groups.forEach(function(g){g.items.forEach(function(q){a.push(q);});});});return a;}
-function tone(q,val){if(GOOD.indexOf(val)>=0)return 'good';if(q.bad&&q.bad.indexOf(val)>=0)return 'bad';if(q.mid&&q.mid.indexOf(val)>=0)return 'mid';return '';}
+function tone(q,val){if(GOOD.indexOf(val)>=0||(q.good&&q.good.indexOf(val)>=0))return 'good';if(q.bad&&q.bad.indexOf(val)>=0)return 'bad';if(q.mid&&q.mid.indexOf(val)>=0)return 'mid';return '';}
 var saveT; function saveDraft(){clearTimeout(saveT);saveT=setTimeout(function(){DB.set('draft',S);},300);}
 
 /* ============================================================
@@ -241,7 +247,7 @@ function followHTML(f,show){
     '<textarea data-f="'+f.id+'">'+esc(S.v[f.id]||'')+'</textarea>'+(f.photos?photosHTML(f.id):'')+'</div>';
 }
 function qHTML(q){
-  var h='<div class="q" id="q-'+q.id+'"><div class="ql">'+esc(q.l)+'</div>';
+  var h='<div class="q" id="q-'+q.id+'"><div class="ql">'+esc(q.l)+(q.h?'<div class="qh">'+esc(q.h)+'</div>':'')+'</div>';
   if(q.t==='auto'){
     h+='<input readonly value="'+esc(fmtDT(S.v.abertura))+'">';
   } else if(q.t==='obs'){
