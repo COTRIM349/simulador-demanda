@@ -1,44 +1,50 @@
-# Check-list Diário — Operação com Drones
+# Check-list Drone
 
-Formulário web (PWA) para o check-list de pré-voo e registro diário da operação com drones
-(pulverização, sólidos/semeadura, mapeamento e inspeção). Funciona **offline** no campo.
+Formulário web (PWA) do check-list diário da operação com drones T100, montado a partir do
+documento `check_list.docx`. Funciona no celular, **inclusive sem sinal**.
 
-URL após publicar no GitHub Pages: `https://SEU_USUARIO.github.io/simulador-demanda/checklist-drone/`
+Endereço após publicar no GitHub Pages:
+`https://SEU_USUARIO.github.io/simulador-demanda/checklist-drone/`
 
-## O que o formulário faz
+## Perguntas
 
-- **Itens por tipo de operação** — documentação/equipe, área e segurança, aeronave,
-  sistema de aplicação (ou carga útil, em mapeamento/inspeção), baterias e controle.
-  Cada item: OK / NC / N/A. NC exige descrição da não conformidade.
-- **Clima no local** — vento, rajada, temperatura, UR e chuva prevista. Calcula o **Delta T**
-  (bulbo úmido por Stull, 2011) e sinaliza faixas de referência para aplicação
-  (vento 3–10 km/h, T ≤ 30 °C, UR ≥ 55 %, ΔT 2–8 °C). Bula e fabricante prevalecem.
-- **Parecer automático**
-  - **NÃO APTO**: qualquer item CRÍTICO em NC, vento > 15 km/h ou ΔT > 10 °C (aplicação).
-  - **APTO COM RESTRIÇÃO**: NC não crítica ou alerta de clima — obriga registrar a restrição.
-  - **APTO**: tudo conforme.
-- **Pós-operação** — área (ha), voos, produto/dose, taxa, baterias, ocorrências. Dá para
-  reabrir o registro pelo Histórico no fim do dia e salvar de novo.
-- **Assinatura** do piloto na tela.
-- **Histórico** no aparelho, exportação **CSV** (abre no Excel), **compartilhar** resumo
-  por WhatsApp.
-- **Envio para Google Sheets** (opcional) com fila offline: sem sinal, guarda e reenvia
-  quando a conexão volta.
+**Parte 1 — Dados do responsável**
+- Piloto: Aloísio / Marco / Outro → se "Outro", abre campo para o nome
+- Turno: Diurno / Noturno
+- Data e horário de preenchimento: automáticos, na abertura do formulário
+- Setor: Grãos / Cacau / Outro (com campo "Qual setor?")
+- Aeronave: T100 01 / T100 02 / Ambos os T100
 
-## Ligar a planilha (Google Sheets)
+**Parte 2 — Clima e tempo**
+- Vento (km/h), temperatura (°C) e umidade (%): valor + Apto / Não apto / Adaptável
+- Observações com foto
 
-1. Crie uma planilha no Google Drive.
-2. Menu **Extensões → Apps Script**, apague o conteúdo e cole o arquivo `apps-script.gs`.
-3. **Implantar → Nova implantação → App da Web**
-   - Executar como: **Eu**
-   - Quem pode acessar: **Qualquer pessoa**
-4. Autorize e copie a URL terminada em `/exec`.
-5. No formulário, aba **Config.** → cole a URL → **Salvar** → **Testar envio**.
+**Parte 3 — Equipamentos**
+- Gerador: condições (Apto / Não apto / Corrigível); óleo necessita troca (Sim/Não); observações com foto
+- Drone: carcaça (Apta / Não apta); hélices e motores, sistema de pulverização, câmeras e sensores
+  (Apto / Não apto / Corrigível); aeronave atualizada (Não → "Por quê?"); erro no controle
+  (Sim → "Qual?" + foto); misturador em bom funcionamento (Não → "Por quê?"); observações com foto
+- Veículo e carretinha: falha no veículo (Sim → "Qual?" + foto); avaria na carretinha
+  (Sim → "Qual?" + foto); observações com foto
 
-Cada registro vira uma linha na aba `Checklists`. Reenviar o mesmo registro atualiza a linha
-(não duplica). A assinatura fica só no aparelho; na planilha vai o campo `assinado = sim/não`.
+Todas as perguntas de opção são obrigatórias; observações e fotos são opcionais.
+No fim do formulário aparece um **resumo dos pontos de atenção** (Não apto, Corrigível,
+Adaptável, erro, falha, avaria, troca de óleo, aeronave desatualizada).
 
-## Ajustar os itens
+## Onde ficam as respostas
 
-Os itens ficam no array `SECTIONS` no início do `<script>` em `index.html`.
-`crit: true` torna o item bloqueante; `ops: [...]` limita o item a tipos de operação.
+- **No aparelho**: aba Histórico (ver, compartilhar, exportar CSV).
+- **Compartilhar**: resumo em texto + fotos pelo WhatsApp.
+- **Google Sheets** (recomendado): uma linha por check-list; fotos numa pasta do Google Drive,
+  com link na planilha. Sem sinal, fica na fila e é enviado quando a conexão volta.
+
+### Ligar a planilha
+
+1. Crie uma planilha no Google Drive (com a conta que vai guardar os dados).
+2. **Extensões → Apps Script**, apague o conteúdo e cole `apps-script.gs`.
+3. **Implantar → Nova implantação → App da Web** — Executar como: **Eu**;
+   Quem pode acessar: **Qualquer pessoa**. Autorize (planilha + Drive).
+4. Copie a URL `…/exec`.
+5. Melhor opção: coloque a URL na constante `SHEETS_URL` no início do `<script>` do
+   `index.html` — assim nenhum piloto precisa configurar nada. Alternativa: colar em
+   **Config.** em cada celular e tocar **Testar envio**.

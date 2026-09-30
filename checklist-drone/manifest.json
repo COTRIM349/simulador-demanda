@@ -1,7 +1,7 @@
 {
-  "name": "Check-list Diário — Operação com Drones",
+  "name": "Check-list Drone",
   "short_name": "Check Drone",
-  "description": "Check-list diário de pré-voo e operação com drones agrícolas",
+  "description": "Check-list diário da operação com drones T100",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
