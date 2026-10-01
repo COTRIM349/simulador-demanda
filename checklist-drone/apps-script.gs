@@ -28,7 +28,7 @@ var COLS = [
   ['ger_obs', 'Gerador - observações'], ['@ger_obs', 'Gerador - fotos'],
   ['carcaca', 'Drone - carcaça'], ['helices', 'Drone - hélices e motores'],
   ['pulv', 'Drone - sistema de pulverização'], ['seguranca', 'Drone - câmeras e sensores'],
-  ['limp_drone', 'Limpeza do drone (0-3)'], ['limp_tanque', 'Limpeza do tanque (0-3)'],
+  ['limp_drone', 'Limpeza do drone (0-3)'], ['limp_tanque', 'Limpeza do tanque (0-3)'], ['descontaminado', 'Foi descontaminado'],
   ['atualizada', 'Aeronave atualizada'], ['atualizada_pq', 'Aeronave atualizada - por quê'],
   ['erro_controle', 'Erro no controle'], ['erro_qual', 'Erro no controle - qual'], ['@erro_qual', 'Erro no controle - fotos'],
   ['misturador', 'Misturador em bom funcionamento'], ['misturador_pq', 'Misturador - por quê'],
