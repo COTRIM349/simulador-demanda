@@ -1,5 +1,5 @@
 // Caminhos relativos: funciona em GitHub Pages de projeto (/simulador-demanda/checklist-drone/)
-const CACHE = 'checklist-drone-v5';
+const CACHE = 'checklist-drone-v6';
 const ASSETS = ['./', './index.html', './manifest.json', '../icons/icon-192.png', '../icons/icon-512.png'];
 
 self.addEventListener('install', e => {
