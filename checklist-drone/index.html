@@ -186,7 +186,6 @@ var FORM = [
       {t:'choice', id:'seguranca', l:'Avaliação do sistema de segurança: câmeras e sensores', o:AVAL3, bad:['Não apto'], mid:['Corrigível']},
       {t:'choice', id:'limp_drone', l:'Limpeza do drone', h:NIVEL_H, o:NIVEL, bad:['0'], mid:['1'], good:['2','3']},
       {t:'choice', id:'limp_tanque', l:'Limpeza do tanque', h:NIVEL_H, o:NIVEL, bad:['0'], mid:['1'], good:['2','3']},
-      {t:'choice', id:'descontaminado', l:'O tanque e o sistema de pulverização foram descontaminados?', o:SN, mid:['Não'], good:['Sim']},
       {t:'choice', id:'atualizada', l:'A aeronave está atualizada?', o:SN, mid:['Não'], follow:{when:'Não', id:'atualizada_pq', l:'Por quê?'}},
       {t:'choice', id:'erro_controle', l:'Aparece algum erro no controle?', o:SN, bad:['Sim'], follow:{when:'Sim', id:'erro_qual', l:'Qual?', photos:true}},
       {t:'choice', id:'misturador', l:'O misturador está em bom funcionamento?', o:SN, bad:['Não'], follow:{when:'Não', id:'misturador_pq', l:'Por quê?'}},
