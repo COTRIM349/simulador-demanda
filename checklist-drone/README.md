@@ -22,15 +22,15 @@ Endereço após publicar no GitHub Pages:
 **Parte 3 — Equipamentos**
 - Gerador: condições (Apto / Não apto / Corrigível); óleo necessita troca (Sim/Não); observações com foto
 - Drone: carcaça (Apta / Não apta); hélices e motores, sistema de pulverização, câmeras e sensores
-  (Apto / Não apto / Corrigível); limpeza do drone e limpeza do tanque (nível 0 a 5,
-  0 = muito sujo, 5 = totalmente limpo); aeronave atualizada (Não → "Por quê?"); erro no controle
+  (Apto / Não apto / Corrigível); limpeza do drone e limpeza do tanque (nível 0 a 3,
+  0 = muito sujo, 3 = totalmente limpo); aeronave atualizada (Não → "Por quê?"); erro no controle
   (Sim → "Qual?" + foto); misturador em bom funcionamento (Não → "Por quê?"); observações com foto
 - Veículo e carretinha: falha no veículo (Sim → "Qual?" + foto); avaria na carretinha
   (Sim → "Qual?" + foto); observações com foto
 
 Todas as perguntas de opção são obrigatórias; observações e fotos são opcionais.
 No fim do formulário aparece um **resumo dos pontos de atenção** (Não apto, Corrigível,
-Adaptável, limpeza 0 a 3, erro, falha, avaria, troca de óleo, aeronave desatualizada).
+Adaptável, limpeza 0 ou 1, erro, falha, avaria, troca de óleo, aeronave desatualizada).
 
 ## Onde ficam as respostas
 
